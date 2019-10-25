@@ -2,8 +2,9 @@
 {
     Properties
     {
-        _Color ("Color", Color) = (1,1,1,1)
-        _MainTex ("Albedo (RGB)", 2D) = "white" {}
+        _WaveSpeed ("Wave Speed", Range(1,20)) = 10
+        _BandSize ("Band Size", Range(0.001,2.0)) = 0.5
+        _AlphaOffset ("Alpha Offset", Range(-2.0,2.0)) = -0.14
         _Glossiness ("Smoothness", Range(0,1)) = 0.5
         _Metallic ("Metallic", Range(0,1)) = 0.0
     }
@@ -14,12 +15,9 @@
 
         CGPROGRAM
         // Physically based Standard lighting model, and enable shadows on all light types
-//        #pragma surface surf Standard fullforwardshadows
+        // Also enable support for alpha blending.
         #pragma surface surf Standard fullforwardshadows alpha:fade
 
-        // Allow alpha override
-//        #pragma surface surf NoLighting alpha
-////
         // Use shader model 3.0 target, to get nicer looking lighting
         #pragma target 3.0
 
@@ -31,6 +29,9 @@
             float3 worldPos;
         };
 
+        half _WaveSpeed;
+        half _BandSize;
+        half _AlphaOffset;
         half _Glossiness;
         half _Metallic;
         fixed4 _Color;
@@ -59,23 +60,16 @@
 
         void surf (Input IN, inout SurfaceOutputStandard o)
         {
-            // Albedo comes from a texture tinted by color
-//            fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * _Color;
             fixed4 c;
-//            c.rgb = (tex2D (_MainTex, IN.uv_MainTex) * _Color).rgb;
-//            if (IN.worldPos.y % 1 == 0) c.rgb = 0;
-//            fixed4 c;
-//            c.rgb = fixed3(1.0, 0.5, 1.0);
-//            c.rgb = HSVtoRGB(float3(0.25, 1.0, 1.0)); //
-            float waveOffset = frac(((IN.worldPos.y / 2)) + (_SinTime.w * 5.0));
+            // Take world Y position of surface, tweak value a bit, and add offset of an animated sine wave
+            float waveOffset = frac(((IN.worldPos.y * _BandSize)) + (_SinTime.w * _WaveSpeed));
             c.rgb = HSVtoRGB(float3(
-//                _SinTime.x,
                 waveOffset,
-//                frac(((IN.worldPos.y / 2)) + (_SinTime.w * 10.0)), //perfect!!
                 1.0,
                 1.0
             )); //
-            c.a = waveOffset;
+            // Also animate alpha in a wave, applying user offset
+            c.a = waveOffset + _AlphaOffset;
             o.Albedo = c.rgb;
             // Metallic and smoothness come from slider variables
             o.Metallic = _Metallic;
